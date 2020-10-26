@@ -79,7 +79,7 @@ marker.draggable = true;
 map.addObject(marker);
 
 // Create reader object initializing it with a document:
-var reader = new H.data.kml.Reader('Election Day.kml');
+var reader = new H.data.geojson.Reader('EarlyPolling.json');
 
 // Parse the document:
 reader.parse();
