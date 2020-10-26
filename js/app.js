@@ -94,14 +94,16 @@ const ui = H.ui.UI.createDefault(map, defaultLayers);
 layer.getProvider().addEventListener('tap', function(ev) {
     // Log map object data. They contain name, description (if present in
     // KML) and the KML node itself.
-    //console.log(ev.target.getData());
+    layer.getProvider().addEventListener('tap', function(ev) {
+    // Log map object data. They contain name, description (if present in
+    // KML) and the KML node itself.
+    console.log(ev.target.getData());
     //console.log(ev.target.getPosition());
     const info = ev.target.getData();
-    console.log(info.properties);
+    //console.log(info.properties);
     //console.log(info.pro)
 
-    let content = '<b>' + info.properties.Name + '</b><br/>';
-    content += info.properties.Address;
+    let content = '<b>' + info.name + '</b><br/>';
 
 let bubble =  new H.ui.InfoBubble(ev.target.getGeometry(), {
   content: content
