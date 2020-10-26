@@ -2,8 +2,8 @@ import { hereCredentials } from './config.js';
 import { router, geocoder } from './app.js';
 
 const isolineMaxRange = {
-   time: 32400, //seconds
-   distance: 80000 //meters
+   time: 3600, //seconds
+   distance: 10000 //meters
 }
 
 const requestIsolineShape = options => {
