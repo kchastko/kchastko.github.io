@@ -89,7 +89,7 @@
     function showPopup(latlng, area, hours, power) {
         popup
             .setLatLng(latlng)
-            .setContent('<p>This building has a roof area of '+ Math.round(area) +' square meters and receives '+ hours +' hours of sunlight annually. This roof could generate approximately '+ Math.round(area * 4.833 * 365 * 0.02) +' kwh per year worth, ' + Math.round(area * 4.833 * 365 * 0.02 * 0.12) + ' dollars.</p>')
+            .setContent('<p>This building has a roof area of '+ Math.round(area) +' square meters and receives '+ Math.round(hours) +' hours of sunlight annually. This roof could generate approximately '+ Math.round(area * 4.833 * 365 * 0.02) +' kwh per year worth, ' + Math.round(area * 4.833 * 365 * 0.02 * 0.12) + ' dollars.</p>')
             .openOn(map);
     }
 
