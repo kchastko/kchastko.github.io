@@ -1,94 +1,247 @@
-<!DOCTYPE html>
-<html>
+<!--
+
+To run this demo, you need to replace 'YOUR_API_KEY' with an API key from the ArcGIS Developer dashboard.
+
+Sign up for a free account and get an API key.
+
+https://developers.arcgis.com/documentation/mapping-apis-and-services/get-started/
+
+ --><html>
 <head>
-<meta charset="utf-8" />
-<title>3D Pop</title>
-<meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
-<script src="https://api.mapbox.com/mapbox-gl-js/v2.0.1/mapbox-gl.js"></script>
-<link href="https://api.mapbox.com/mapbox-gl-js/v2.0.1/mapbox-gl.css" rel="stylesheet" />
-<style>
-	body { margin: 0; padding: 0; }
-	#map { position: absolute; top: 0; bottom: 0; width: 100%; }
-</style>
-</head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>ArcGIS API for JavaScript Tutorials: Search for an address</title>
+  <style>
+        html,
+        body,
+        #viewDiv {
+        padding: 0;
+        margin: 0;
+        height: 100%;
+        width: 100%;
+        }
 
-<body>
-	<style>
-	#holder {
-	position: absolute;
-	left: 0;
-	top: 0;
-	width: 20%;
-	height: 10%;
-	overflow: auto;
-	background: rgba(255, 255, 255, 0.8);
-	text-align: center;
-  font-family: Arial, Helvetica, sans-serif;
-	}
-	#map canvas {
-	cursor: crosshair;
-	}
-	.legend-gradient {
-			align-content: center;
-			background-color: #f5f5f5;
-			background-image: -webkit-linear-gradient(0deg,hsl(74,70%,96%) 20%,hsl(132,35%,73%) 40%,hsl(167,85%,31%) 60%,hsl(228,66%,25%) 80%,hsl(256,66%,25%) 100%);
-			background-image: linear-gradient(90deg,hsl(74,70%,96%) 20%,hsl(132,35%,73%) 40%,hsl(167,85%,31%) 60%,hsl(228,66%,25%) 80%,hsl(256,66%,25%) 100%);
-			display: block;
-			height: 8px;
-			border-radius: 2px;
-	}
-</style>
+        #infoDiv {
+       background-color: white;
+       padding: 10px;
+       max-height: 375px;
+       overflow: auto;
+       }
+        :root {
+        --overlay-width: 300px;
+        --overlay-padding: 15px;
+        --primary-color: #A4CEFF;
+        --grey: #C7C7C7;
+        --streetlight-color: #181A1A;
+        --link-color: #939470;
+    }
 
-<script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.5.1/mapbox-gl-geocoder.min.js"></script>
-<link
-rel="stylesheet"
-href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.5.1/mapbox-gl-geocoder.css"
-type="text/css"/>
-<!-- Promise polyfill script required to use Mapbox GL Geocoder in IE 11 -->
-<script src="https://cdn.jsdelivr.net/npm/es6-promise@4/dist/es6-promise.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/es6-promise@4/dist/es6-promise.auto.min.js"></script>
-<div id="map"></div>
-<div id="holder">
-	<span class = "legend-gradient-label right pt-caption"> Increasing Population Density</span>
-	<div class = "legend-gradient"></div>
-	<div id="features"></div>
-</div>
-<script>
-	mapboxgl.accessToken = 'pk.eyJ1Ijoia2FybGNoYXN0a28iLCJhIjoiY2p1bzJxMG9pMWJudDRmbDgwaWk0MTNhbCJ9.1jiEpD3LWjFCJqOj633yUQ';
-    var map = new mapboxgl.Map({
-        container: 'map', // container id
-        style: 'mapbox://styles/karlchastko/ckjswhck123yn19tf20fpucwf', // style URL
-        center: [-106.6702, 52.1579], // starting position [lng, lat]
-        zoom: 9 // starting zoom
+    body {
+        margin: 0px;
+        border: 0px;
+        padding: 0px;
+        color: #323232;
+        font-size: 14px;
+        font-family: "Avenir Next","Helvetica Neue",Helvetica,Arial,sans-serif;
+        line-height: 1.3em;
+    }
+
+    #overlay a:link {color: var(--link-color); text-decoration: underline; }
+    #overlay a:active {color: var(--link-color); text-decoration: underline; }
+    #overlay a:visited {color: var(--link-color); text-decoration: underline; }
+    #overlay a:hover { color: var(--link-color); text-decoration: underline; }
+
+    #map {
+        height: 100%;
+        width: 100%;
+        position: absolute;
+    }
+    #overlay {
+        background: white;
+        width: var(--overlay-width);
+        color: #181A1A;
+        bottom: 1%;
+        left: 0;
+        margin: 15px;
+        padding: var(--overlay-padding);
+        z-index: 10000;
+        position: absolute;
+        border-radius: 0px;
+    }
+    #overlay-title {
+        color: #323232;
+        font-weight: 600;
+        font-size: 14px;
+        font-family: "Avenir Next","Helvetica Neue",Helvetica,Arial,sans-serif;
+        line-height: 2em;
+    }
+
+    .pt-body, .pt-caption {
+        line-height: 1.5em;
+    }
+  </style>
+  <link rel="stylesheet" href="https://js.arcgis.com/4.20/esri/themes/light/main.css">
+  <script src="https://js.arcgis.com/4.20/"></script>
+
+  <script>
+
+  require([
+    "esri/config",
+    "esri/Map",
+    "esri/views/MapView",
+
+    "esri/widgets/Search",
+    "esri/layers/FeatureLayer",
+    "esri/rest/locator",
+    "esri/widgets/LayerList",
+    "esri/widgets/Legend",
+    "esri/widgets/Compass",
+    "dojo/on",
+    "dojo/domReady!"
+  ], function(esriConfig,Map, MapView, Search,FeatureLayer,locator, Legend,Compass, on) {
+
+  esriConfig.apiKey = "AAPK84e85e5dca364657a3699662eea555b46rl_bASWi4p4SXrfuYm0HSjeJj3Ggc0MnKKyFVXLuhX92FTYucIhvQbHrALcdAuF";
+var address = ""
+  const serviceUrl = "http://geocode-api.arcgis.com/arcgis/rest/services/World/GeocodeServer";
+
+  const map = new Map({
+      basemap: "arcgis-imagery"
     });
 
-		map.on('mousemove', function (e) {
-		var features = map.queryRenderedFeatures(e.point);
+  const view = new MapView({
+      container: "viewDiv",
+      map: map,
+      constraints: {
+      rotationEnabled: false
+      },
+      center: [-95.3700026,29.7600969],
+      zoom: 18,
+      popup: {
+      dockEnabled: false,
+      dockOptions: {
+      // Disables the dock button from the popup
+      buttonEnabled: true,
+      // Ignore the default sizes that trigger responsive docking
+      breakpoint: false,
+      position:"bottom-center"
+  }
+},
+    });
 
-		// Limit the number of properties we're displaying for
-		// legibility and performance
-		var displayProperties = [
-		'properties',
-		];
+  const search = new Search({  //Add Search widget
+      view: view,
+      popupEnabled: false,
+    });
 
-		var displayFeatures = features.map(function (feat) {
-		var displayFeat = {};
-		displayProperties.forEach(function (prop) {
-		displayFeat[prop] = feat[prop];
-		});
-		return displayFeat;
-		});
+    view.on("click", function(evt){
+      const params = {
+        location: evt.mapPoint
+      };
 
-		document.getElementById('features').innerHTML = "<br>" + "Population count: " + JSON.stringify(
-		displayFeatures[1].properties.count,
-		null,
-		2
-		);
-		});
-		// Add zoom and rotation controls to the map.
-		map.addControl(new MapboxGeocoder({accessToken: mapboxgl.accessToken,mapboxgl: mapboxgl}));
-		map.addControl(new mapboxgl.NavigationControl());
-</script>
+     locator.locationToAddress(serviceUrl, params)
+        .then(function(response) { // Show the address found
+          census2000Layer.popupTemplate.title = response.address;
+          var address = response.address;
 
+
+
+      }, function(err) { // Show no address found
+          showAddress("No address found.", evt.mapPoint);
+        });
+
+    });
+  function showAddress(address, pt) {
+    view.popup.open({
+      title: "Address: " + locator.locationToAddress(serviceUrl, params),
+      content:"This is a test {Area}, the anual savings are {GTSavings}",
+      location: pt
+    });
+  }
+  var census2000Template = {
+      //title: "Address: " + address,
+      content:"This is a test {Area}, the anual savings are {GTSavings}"
+    };
+
+  var census2000Layer = new FeatureLayer({
+      url: "https://services3.arcgis.com/esXIm9v3FBLXCe9K/arcgis/rest/services/Solar%20and%20Geothermal%20Suitability/FeatureServer/0",
+      outFields: ["*"],
+      title: "Solar and Geothermal Suitability",
+      popupTemplate: {
+        title:"",
+        content:"This building has a roof area of <strong>{Area} sq ft</strong> and recieves approximatley <strong>{F_mean} hours of sunlight</strong> each year.<br><br> A solar instalation on this roof could generate <strong>{EnergyOut} kWH of solar power</strong>, {ML} energy to power the average texas home for a year.<br><br>Additionally, a geothermal retrofit could reduce your annual heating and cooling bills by approximatley <strong>{GTSavings} dollars annually</strong>.",
+        fieldInfos: [
+              {
+                fieldName: "Area",
+                format: {
+                  digitSeparator: true,
+                  places: 0
+                }
+              },
+              {
+                fieldName: "F_mean",
+                format: {
+                  digitSeparator: true,
+                  places: 0
+                }
+              },
+              {
+                fieldName: "EnergyOut",
+                format: {
+                  digitSeparator: true,
+                  places: 0
+                }
+              },
+              {
+                fieldName: "GTSavings",
+                format: {
+                  digitSeparator: true,
+                  places: 0
+                }
+              }
+            ]
+        }
+    });
+
+    map.add(census2000Layer);
+    view.ui.add(search, "top-right"); //Add to the map
+
+    var legend3 = new Legend({
+      view: view,
+      title: "Renewalable Engery Suitability",
+      layerInfos: [{
+        layer: census2000Layer,
+        title: "Renewalable Engery Suitability"
+      }]
+    });
+    //view.ui.add(legend3, "bottom-right");
+
+    var compass = new Compass({
+  view: view,
+  title: "Renewalable Engery Suitability",
+});
+    view.ui.add(compass,"bottom-right");
+    console.log(legend3)
+
+  });
+
+  </script>
+
+</head>
+<body>
+  <div id="viewDiv"></div>
+  <div id="overlay">
+      <div id="overlay-title">Houston Goes Green</div>
+      <div id="overlay-description">
+         Houston Texas is one of the fastest growing
+         solar energy markets in the United States, it represents a model of success
+         for other American cities looking to reduce their carbon footprints.<br><br>
+         Houston has a naturally high solar potential due to its location. Additionally,
+         it is located in a class 3 geothermal zone which makes geothermal heating and cooling an
+         attractive option for homeowners and businesses looking to save money and help combat
+         climate change.<br><br>Hover over a building to explore facts about its solar energy
+         potential and financial benefits of converting to a geothermal heating and cooling system.<br><br>
+      </div>
+
+    </div>
 </body>
 </html>
